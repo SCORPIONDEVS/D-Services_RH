@@ -7,6 +7,7 @@ use App\Models\Position;
 use App\Models\TimeOccurrence;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 /**
  * CRUD genérico dirigido por config/modules.php: cargos, vagas, candidatos, atestados,
@@ -102,7 +103,7 @@ class ModuleController extends Controller
     public function update(Request $r, string $module, int $id)
     {
         $cfg = $this->cfg($module);
-        $cfg['model']::findOrFail($id)->update($this->payload($r, $cfg));
+        $cfg['model']::findOrFail($id)->update($this->payload($r, $cfg, $id));
 
         return redirect()->route('m.index', $module)->with('ok', 'Registro atualizado.');
     }
@@ -114,7 +115,7 @@ class ModuleController extends Controller
         return redirect()->route('m.index', $module)->with('ok', 'Registro excluído.');
     }
 
-    private function payload(Request $r, array $cfg): array
+    private function payload(Request $r, array $cfg, ?int $ignoreId = null): array
     {
         $rules = [];
         foreach ($cfg['fields'] as $f) {
@@ -132,6 +133,16 @@ class ModuleController extends Controller
             );
         }
         $data = $r->validate($rules);
+
+        // módulos com 'unique' => [colunas] não aceitam registro repetido (ex.: o mesmo vínculo Equipe -> Escala)
+        if (!empty($cfg['unique'])) {
+            $dup = $cfg['model']::query();
+            foreach ($cfg['unique'] as $c) {
+                ($data[$c] ?? null) === null ? $dup->whereNull($c) : $dup->where($c, $data[$c]);
+            }
+            if ($ignoreId) $dup->where('id', '!=', $ignoreId);
+            if ($dup->exists()) throw ValidationException::withMessages([$cfg['unique'][0] => 'Este cadastro já existe.']);
+        }
 
         foreach ($cfg['fields'] as $f) {
             if ($f[2] === 'bool') $data[$f[0]] = $r->boolean($f[0]);

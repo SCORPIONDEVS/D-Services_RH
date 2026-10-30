@@ -7,7 +7,9 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Setting;
 use App\Support\Fmt;
+use App\Support\ScheduleLinks;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends Controller
 {
@@ -127,6 +129,7 @@ class EmployeeController extends Controller
             'e' => $e,
             'sections' => $this->fields(),
             'positions' => Position::orderBy('name')->pluck('name'),
+            'cascade' => ScheduleLinks::cascadeMap(),
         ]);
     }
 
@@ -140,7 +143,7 @@ class EmployeeController extends Controller
 
     public function update(Request $r, Employee $employee)
     {
-        $employee->update($this->payload($r));
+        $employee->update($this->payload($r, $employee));
         $this->syncDependents($employee, $r);
 
         return redirect()->route('employees.show', $employee)->with('ok', 'Cadastro atualizado.');
@@ -152,7 +155,7 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')->with('ok', 'Funcionário excluído.');
     }
 
-    private function payload(Request $r): array
+    private function payload(Request $r, ?Employee $current = null): array
     {
         $rules = [];
         foreach ($this->fields() as $fields) {
@@ -171,6 +174,7 @@ class EmployeeController extends Controller
                 );
             }
         }
+        $rules['work_shift_id'] = ['nullable', 'integer'];
         $rules['dependents.*.name'] = ['nullable', 'string', 'max:255'];
         $rules['dependents.*.birth_date'] = ['nullable', 'date'];
         $rules['dependents.*.cpf'] = ['nullable', 'string', 'max:14'];
@@ -188,6 +192,37 @@ class EmployeeController extends Controller
             if (!empty($data[$k])) $data[$k] = preg_replace('/\D/', '', $data[$k]);
         }
         if (!empty($data['name'])) $data['name'] = mb_strtoupper(trim($data['name']));
+
+        return $this->applySchedule($data, $current);
+    }
+
+    /**
+     * Cascata Equipe -> Escala -> Jornada: valida a combinação no servidor e deriva o texto work_schedule.
+     * Uma combinação legada que não foi alterada nesta edição é tolerada (fica "pendente de revisão"),
+     * para não impedir a edição de outros dados do funcionário.
+     */
+    private function applySchedule(array $data, ?Employee $current): array
+    {
+        $team = $data['team'] ?? null;
+        $scale = $data['scale'] ?? null;
+        $shiftId = !empty($data['work_shift_id']) ? (int) $data['work_shift_id'] : null;
+        $data['work_shift_id'] = $shiftId;
+        unset($data['work_schedule']); // derivado do vínculo; não é mais digitado
+
+        $unchanged = $current && $current->exists
+            && ($current->team ?: null) === $team && ($current->scale ?: null) === $scale
+            && ($current->work_shift_id ? (int) $current->work_shift_id : null) === $shiftId;
+
+        if (!$unchanged && ($errors = ScheduleLinks::errors($team, $scale, $shiftId))) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        if ($shiftId) {
+            $data['work_schedule'] = ScheduleLinks::derivedText($shiftId, $scale);
+            $data['schedule_review'] = false;
+        } elseif (!$unchanged) {
+            $data['work_schedule'] = null;
+        }
 
         return $data;
     }

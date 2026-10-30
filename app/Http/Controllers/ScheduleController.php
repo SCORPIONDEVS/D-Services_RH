@@ -57,14 +57,16 @@ class ScheduleController extends Controller
         $months = $allMonths->filter(fn ($m) => $m >= $from)->take($qtd)->values();
 
         $status = in_array($r->query('status'), ['ativos', 'desligados', 'todos'], true) ? $r->query('status') : 'ativos';
-        $emps = \App\Models\Employee::get(['name', 'job_title', 'termination_date'])->keyBy(fn ($e) => mb_strtoupper(trim($e->name)));
+        $emps = \App\Models\Employee::with('workShift')->get(['id', 'name', 'job_title', 'termination_date', 'scale', 'work_shift_id'])->keyBy(fn ($e) => mb_strtoupper(trim($e->name)));
 
         $rows = [];
         foreach (ShiftPattern::whereIn('month', $months)->orderBy('id')->get() as $p) {
             $key = mb_strtoupper(trim($p->employee_name)) . '|' . $p->team;
-            $rows[$key] ??= ['name' => $p->employee_name, 'team' => $p->team, 'schedule' => $p->schedule, 'cells' => [], 'emp' => $emps->get(mb_strtoupper(trim($p->employee_name)))];
+            $emp = $emps->get(mb_strtoupper(trim($p->employee_name)));
+            $sched = $emp?->schedule_label ?? $p->schedule; // horário do vínculo; texto legado só se ainda não migrado
+            $rows[$key] ??= ['name' => $p->employee_name, 'team' => $p->team, 'schedule' => $sched, 'cells' => [], 'emp' => $emp];
             $rows[$key]['cells'][$p->month] = $p->pattern;
-            if ($p->schedule) $rows[$key]['schedule'] = $p->schedule;
+            if ($sched) $rows[$key]['schedule'] = $sched;
         }
         $rows = collect($rows)->filter(function ($row) use ($status) {
             $inactive = $row['emp'] && $row['emp']->termination_date;
@@ -96,9 +98,15 @@ class ScheduleController extends Controller
             $q->whereNotIn('employee_name', \App\Models\Employee::active()->pluck('name'));
         }
 
+        $rows = $q->get();
+        $emps = \App\Models\Employee::with('workShift')->get(['id', 'name', 'scale', 'work_shift_id'])->keyBy(fn ($e) => mb_strtoupper(trim($e->name)));
+        foreach ($rows as $p) { // horário exibido vem do vínculo do funcionário; texto legado só como reserva
+            $p->setAttribute('display_schedule', $emps->get(mb_strtoupper(trim($p->employee_name)))?->schedule_label ?? $p->schedule);
+        }
+
         return view('schedules.patterns', [
             'status' => $status,
-            'months' => $months, 'month' => $month, 'rows' => $q->get(),
+            'months' => $months, 'month' => $month, 'rows' => $rows,
             'assignments' => PatternAssignment::orderBy('id')->get(),
         ]);
     }
@@ -113,7 +121,7 @@ class ScheduleController extends Controller
         $cur = now()->format('Y-m');
         $month = $months->contains($r->input('month')) ? $r->input('month') : ($months->contains($cur) ? $cur : $months->first());
 
-        $emps = \App\Models\Employee::active()->get(['name', 'job_title'])
+        $emps = \App\Models\Employee::active()->with('workShift')->get(['id', 'name', 'job_title', 'scale', 'work_shift_id'])
             ->keyBy(fn ($e) => mb_strtoupper(trim($e->name)));
 
         $groups = [];
@@ -123,7 +131,7 @@ class ScheduleController extends Controller
             $emp = $emps->get(mb_strtoupper(trim($p->employee_name)));
             if (!$side || !$emp) continue; // só 12x36 e só ativos
 
-            $hours = trim(preg_replace('/\s*-?\s*Jornada.*$/iu', '', (string) $p->schedule));
+            $hours = trim(preg_replace('/\s*-?\s*Jornada.*$/iu', '', (string) ($emp->schedule_label ?? $p->schedule)));
             $label = trim(($emp->job_title ?: 'SEM CARGO') . ($hours !== '' ? ' · ' . $hours : ''));
             $groups[$label][$side][] = $p->employee_name;
         }

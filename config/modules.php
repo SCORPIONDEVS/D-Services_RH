@@ -262,4 +262,42 @@ return [
             ['hours_total', 'Expediente (h:mm)', 'text'], ['hours_worked', 'Horas sem intervalo (h:mm)', 'text'],
         ],
     ],
+
+    // ---- Cascata Equipe -> Escala -> Jornada (gerenciada sem mexer em código) ----
+
+    'scales' => [
+        'title' => 'Escalas', 'icon' => '⚖️', 'model' => \App\Models\Scale::class,
+        'search' => ['name', 'label'], 'order' => ['name', 'asc'],
+        'columns' => [['name', 'Escala'], ['label', 'Texto exibido no horário']],
+        'fields' => [
+            ['name', 'Escala (valor gravado no funcionário, ex.: 12X36)', 'text', 'required' => true],
+            ['label', 'Texto exibido no horário (ex.: Jornada 12 x 36)', 'text'],
+        ],
+        'unique' => ['name'],
+    ],
+
+    'team-scales' => [
+        'title' => 'Equipe → Escala', 'icon' => '🔗', 'model' => \App\Models\TeamScale::class, 'with' => ['scale'],
+        'search' => ['team'], 'order' => ['team', 'asc'],
+        'filters' => [['team', 'Equipe', $teams]],
+        'columns' => [['team', 'Equipe'], ['scale.name', 'Escala']],
+        'fields' => [
+            ['team', 'Equipe', 'select', 'options' => $teams, 'required' => true],
+            ['scale_id', 'Escala', 'relation', 'model' => \App\Models\Scale::class, 'label' => ['name'], 'order' => ['name', 'asc'], 'required' => true],
+        ],
+        'unique' => ['team', 'scale_id'],
+    ],
+
+    'scale-work-shifts' => [
+        'title' => 'Escala → Jornada', 'icon' => '🔗', 'model' => \App\Models\ScaleWorkShift::class, 'with' => ['scale', 'workShift'],
+        'search' => ['team'], 'order' => ['scale_id', 'asc'],
+        'filters' => [['team', 'Equipe', $teams]],
+        'columns' => [['scale.name', 'Escala'], ['team', 'Equipe'], ['workShift.name', 'Jornada'], ['workShift.entry_time', 'Entrada'], ['workShift.exit_time', 'Saída']],
+        'fields' => [
+            ['scale_id', 'Escala', 'relation', 'model' => \App\Models\Scale::class, 'label' => ['name'], 'order' => ['name', 'asc'], 'required' => true],
+            ['team', 'Equipe (vazio = qualquer equipe que use a escala)', 'select', 'options' => $teams],
+            ['work_shift_id', 'Jornada (cadastro "Jornadas por cargo")', 'relation', 'model' => \App\Models\WorkShift::class, 'label' => ['name', 'entry_time', 'exit_time'], 'order' => ['name', 'asc'], 'required' => true],
+        ],
+        'unique' => ['scale_id', 'work_shift_id', 'team'],
+    ],
 ];

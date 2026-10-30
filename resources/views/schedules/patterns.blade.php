@@ -33,7 +33,7 @@
             <thead><tr><th>Colaborador</th><th>Equipe</th><th>Horário</th><th>Padrão em {{ $month }}</th></tr></thead>
             <tbody>
             @forelse ($rows as $p)
-                <tr><td><b>{{ $p->employee_name }}</b></td><td>{{ $p->team }}</td><td>{{ $p->schedule }}</td>
+                <tr><td><b>{{ $p->employee_name }}</b></td><td>{{ $p->team }}</td><td>{{ $p->display_schedule ?? $p->schedule }}</td>
                     <td><input class="js-pattern" data-url="{{ route('schedules.patterns.update', $p) }}" value="{{ $p->pattern }}" maxlength="40"></td></tr>
             @empty <tr><td colspan="4" class="empty">Sem padrões neste mês.</td></tr> @endforelse
             </tbody>

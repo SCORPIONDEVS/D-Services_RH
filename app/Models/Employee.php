@@ -24,6 +24,14 @@ class Employee extends Model
     public function payrollEntries() { return $this->hasMany(PayrollEntry::class); }
     public function benefitEntries() { return $this->hasMany(BenefitEntry::class); }
     public function companyRef() { return $this->belongsTo(Company::class, 'company', 'short_name'); }
+    public function workShift() { return $this->belongsTo(WorkShift::class); }
+
+    /** Horário vindo do vínculo Escala/Jornada ("06:00 às 18:00 - Jornada 12 x 36"); null se ainda não migrado. */
+    public function getScheduleLabelAttribute(): ?string
+    {
+        if (!$this->work_shift_id || !$this->workShift) return null;
+        return $this->workShift->timeLabel(Scale::labelFor($this->scale));
+    }
 
     public function scopeActive($q) { return $q->whereNull('termination_date'); }
     public function scopeInactive($q) { return $q->whereNotNull('termination_date'); }

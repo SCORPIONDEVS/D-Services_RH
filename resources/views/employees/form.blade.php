@@ -14,6 +14,12 @@
                 @php
                     if (($f['mask'] ?? null) === 'positions') $f['suggest'] = 'positions';
                 @endphp
+                {{-- Equipe/Escala/Jornada formam a cascata (partial único); Escala e Jornada não são renderizadas à parte --}}
+                @if ($f[0] === 'team')
+                    @include('employees._schedule_cascade', ['f' => $f, 'e' => $e, 'cascade' => $cascade])
+                    @continue
+                @endif
+                @continue(in_array($f[0], ['scale', 'work_schedule'], true))
                 @include('module._field', ['f' => $f, 'value' => $e->{$f[0]}, 'prefix' => '', 'relations' => [], 'employeeNames' => [], 'suggest' => []])
             @endforeach
         </fieldset>

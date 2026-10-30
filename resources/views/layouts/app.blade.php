@@ -16,7 +16,7 @@
         'Recrutamento' => [$m('job-openings'), $m('candidates')],
         'Ponto e folha' => [$m('occurrences'), $m('inconsistencies'), $m('payroll'), $m('attendance'), $m('leadership'), $m('coverages')],
         'Benefícios' => [['benefits*', '🚌', 'Benefícios VT/VR', route('benefits.index')]],
-        'Escalas' => [['schedules', '🗓️', 'Grade do Terminal', route('schedules.index')], ['schedules/visao*', '🎨', 'Escala colorida', route('schedules.overview')], ['schedules/patterns*', '🔄', 'Padrão mensal 12x36', route('schedules.patterns')], $m('work-shifts')],
+        'Escalas' => [['schedules', '🗓️', 'Grade do Terminal', route('schedules.index')], ['schedules/visao*', '🎨', 'Escala colorida', route('schedules.overview')], ['schedules/patterns*', '🔄', 'Padrão mensal 12x36', route('schedules.patterns')], $m('work-shifts'), $m('scales'), $m('team-scales'), $m('scale-work-shifts')],
         'Cadastros' => [$m('positions'), $m('calendar')],
     ];
 @endphp
