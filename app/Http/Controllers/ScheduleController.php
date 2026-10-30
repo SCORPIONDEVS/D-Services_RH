@@ -104,8 +104,11 @@ class ScheduleController extends Controller
             $p->setAttribute('display_schedule', $emps->get(mb_strtoupper(trim($p->employee_name)))?->schedule_label ?? $p->schedule);
         }
 
+        $latest = $months->first();
+        $nextMonth = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', ($latest ?: now()->format('Y-m')) . '-01')->addMonth()->format('Y-m');
+
         return view('schedules.patterns', [
-            'status' => $status,
+            'nextMonth' => $nextMonth, 'status' => $status,
             'months' => $months, 'month' => $month, 'rows' => $rows,
             'assignments' => PatternAssignment::orderBy('id')->get(),
         ]);
@@ -149,6 +152,26 @@ class ScheduleController extends Controller
         });
 
         return back()->with('ok', 'Postos 12x36 preenchidos automaticamente com os ativos de ' . $month . ' (' . PatternAssignment::count() . ' linhas).');
+    }
+
+    /** Cria as âncoras do rodízio 12x36 a partir dos padrões já cadastrados (não altera quem já tem âncora). */
+    public function importRotation()
+    {
+        $r = \App\Support\Rotation::importAnchors();
+
+        return back()->with('ok', "Rodízio importado do cadastro: {$r['criadas']} colaboradores configurados, {$r['ja_tinham']} já estavam e {$r['sem_padrao']} sem padrão anterior.");
+    }
+
+    /** Gera o padrão (ÍMPAR/PAR + dias por quinzena) do mês para os ativos em 12X36. Nunca sobrescreve o que já existe. */
+    public function generateRotation(Request $r)
+    {
+        $month = $r->validate(['month' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/']], [
+            'month.required' => 'Escolha o mês.', 'month.regex' => 'Mês inválido.',
+        ])['month'];
+        $res = \App\Support\Rotation::generateMonth($month);
+
+        return redirect()->route('schedules.patterns', ['month' => $month])->with('ok',
+            "Padrão de {$month}: {$res['criados']} gerados, {$res['ja_existiam']} já existiam (mantidos)" . ($res['sem_ancora'] ? " e {$res['sem_ancora']} sem rodízio configurado (use \"Importar rodízio\" ou cadastre o reinício)." : '.'));
     }
 
     public function updatePattern(Request $r, ShiftPattern $pattern)

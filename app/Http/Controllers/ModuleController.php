@@ -137,8 +137,11 @@ class ModuleController extends Controller
         // módulos com 'unique' => [colunas] não aceitam registro repetido (ex.: o mesmo vínculo Equipe -> Escala)
         if (!empty($cfg['unique'])) {
             $dup = $cfg['model']::query();
+            $types = collect($cfg['fields'])->mapWithKeys(fn ($f) => [$f[0] => $f[2]]);
             foreach ($cfg['unique'] as $c) {
-                ($data[$c] ?? null) === null ? $dup->whereNull($c) : $dup->where($c, $data[$c]);
+                if (($data[$c] ?? null) === null) $dup->whereNull($c);
+                elseif (($types[$c] ?? null) === 'date') $dup->whereDate($c, $data[$c]); // gravado como datetime: compara só o dia
+                else $dup->where($c, $data[$c]);
             }
             if ($ignoreId) $dup->where('id', '!=', $ignoreId);
             if ($dup->exists()) throw ValidationException::withMessages([$cfg['unique'][0] => 'Este cadastro já existe.']);
