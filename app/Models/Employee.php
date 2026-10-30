@@ -62,16 +62,22 @@ class Employee extends Model
         return $this->aso_admission_date?->copy()->addDays(364);
     }
 
-    /** Período aquisitivo de férias: admissão até +364 dias. */
-    public function getAcquisitiveEndAttribute()
+    /** Fim do período aquisitivo de férias nº $k+1: 12 meses de calendário a partir da admissão, menos um dia. */
+    public function acquisitiveEndFor(int $k = 0): ?\Carbon\CarbonInterface
     {
-        return $this->admission_date?->copy()->addDays(364);
+        return $this->admission_date?->copy()->addYearsNoOverflow($k + 1)->subDay();
     }
 
-    /** Período de gozo: começa no dia seguinte e dura 365 dias. */
+    /** Período aquisitivo de férias: admissão até 12 meses depois (menos um dia). */
+    public function getAcquisitiveEndAttribute()
+    {
+        return $this->acquisitiveEndFor(0);
+    }
+
+    /** Período de gozo: começa no dia seguinte e dura 12 meses. */
     public function getGrantEndAttribute()
     {
-        return $this->acquisitiveEnd?->copy()->addDays(365);
+        return $this->acquisitiveEnd?->copy()->addYearNoOverflow();
     }
 
     /** VT/dia = tarifa × quantidade de passagens por dia (se tem benefício). */
@@ -91,6 +97,40 @@ class Employee extends Model
     {
         $cap = (float) Setting::get('assiduity_salary_cap', 0);
         return $cap > 0 && (float) $this->salary < $cap;
+    }
+
+    /**
+     * Situação de férias para destacar na lista de funcionários (somente ATIVOS):
+     *  - 'em_ferias': hoje está entre o início e o fim das férias lançadas;
+     *  - 'vencendo' : há um período aquisitivo completo sem férias lançadas e o prazo de gozo termina em até $alertDays dias;
+     *  - 'vencida'  : o prazo de gozo desse período já passou.
+     * Períodos aquisitivos se repetem a cada ano. Como só a última férias fica lançada, uma férias com início depois do
+     * fim de um período conta como gozada para ele e para os anteriores. Retorna null quando não há nada a destacar.
+     *
+     * @return array{status:string, date:\Carbon\CarbonInterface, days:int}|null  date = fim das férias ou prazo de gozo
+     */
+    public function vacationStatus(?\Carbon\CarbonInterface $today = null, int $alertDays = 90): ?array
+    {
+        if ($this->termination_date || !$this->admission_date) return null;
+        $today = ($today ?? today())->copy()->startOfDay();
+
+        if ($this->vacation_start && $this->vacation_end
+            && $this->vacation_start->copy()->startOfDay()->lte($today) && $this->vacation_end->copy()->startOfDay()->gte($today)) {
+            return ['status' => 'em_ferias', 'date' => $this->vacation_end, 'days' => (int) $today->diffInDays($this->vacation_end->copy()->startOfDay())];
+        }
+
+        for ($k = 0; $k < 60; $k++) {
+            $end = $this->acquisitiveEndFor($k)->startOfDay();
+            if ($end->gt($today)) return null;                                   // próximo período ainda não completou
+            if ($this->vacation_start && $end->lt($this->vacation_start->copy()->startOfDay())) continue; // já gozado/agendado
+
+            $deadline = $end->copy()->addYearNoOverflow();                       // mesma regra de grantEnd
+            $days = (int) round($today->diffInDays($deadline, false));
+            if ($days < 0) return ['status' => 'vencida', 'date' => $deadline, 'days' => $days];
+            return $days <= $alertDays ? ['status' => 'vencendo', 'date' => $deadline, 'days' => $days] : null;
+        }
+
+        return null;
     }
 
     public function getCnpjAttribute(): ?string

@@ -41,6 +41,7 @@ class EmployeeController extends Controller
             'companies' => Employee::distinct()->whereNotNull('company')->pluck('company'),
             'jobTitles' => Employee::distinct()->whereNotNull('job_title')->orderBy('job_title')->pluck('job_title'),
             'status' => $status,
+            'vacationAlertDays' => max(1, (int) Setting::get('vacation_alert_days', 90)),
             'counts' => ['ativo' => Employee::active()->count(), 'inativo' => Employee::inactive()->count()],
         ]);
     }
