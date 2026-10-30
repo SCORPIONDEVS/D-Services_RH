@@ -23,14 +23,32 @@
     <button class="btn">Filtrar</button>
 </form>
 
+<div class="vac-legend">
+    <span><i class="dot vac-on"></i> Em férias</span>
+    <span><i class="dot vac-due"></i> Férias vencendo (prazo de gozo em até {{ $vacationAlertDays }} dias) ou vencidas</span>
+</div>
+
 <div class="card table-wrap">
     <table class="grid">
         <thead><tr><th>Nome</th><th>Equipe</th><th>Cargo</th><th>Admissão</th><th>Fim 45d</th><th>Fim 90d</th><th>Venc. ASO</th><th>Status</th><th class="r"></th></tr></thead>
         <tbody>
         @forelse ($employees as $e)
-            @php $today = today(); @endphp
-            <tr>
-                <td><a href="{{ route('employees.show', $e) }}"><b>{{ $e->name }}</b></a><div class="sub">{{ $e->company }}</div></td>
+            @php
+                $today = today();
+                $vac = $e->vacationStatus($today, $vacationAlertDays);
+                $vacClass = match ($vac['status'] ?? null) { 'em_ferias' => 'vac-on', 'vencendo', 'vencida' => 'vac-due', default => '' };
+            @endphp
+            <tr class="{{ $vacClass }}">
+                <td><a href="{{ route('employees.show', $e) }}"><b>{{ $e->name }}</b></a><div class="sub">{{ $e->company }}</div>
+                    @if ($vac)
+                        <div class="vac-tag">
+                            @if ($vac['status'] === 'em_ferias') 🌴 Em férias até {{ \App\Support\Fmt::date($vac['date']) }}
+                            @elseif ($vac['status'] === 'vencendo') ⏳ Férias vencem em {{ $vac['days'] }} {{ $vac['days'] === 1 ? 'dia' : 'dias' }} ({{ \App\Support\Fmt::date($vac['date']) }})
+                            @else ⚠ Férias vencidas desde {{ \App\Support\Fmt::date($vac['date']) }}
+                            @endif
+                        </div>
+                    @endif
+                </td>
                 <td>{{ $e->team }}</td>
                 <td>{{ $e->job_title }}</td>
                 <td>{{ \App\Support\Fmt::date($e->admission_date) }}</td>

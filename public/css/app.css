@@ -2,10 +2,13 @@
   --bg:#f5f6f8; --card:#fff; --ink:#1c2430; --muted:#6b7686; --line:#e2e6ec;
   --brand:#0f3d6e; --brand-2:#1f6feb; --ok:#1a7f43; --okbg:#e3f5ea; --warn:#9a6700; --warnbg:#fff4d6;
   --bad:#b42318; --badbg:#fde8e6; --side:#0c2a4a; --sideink:#d6e2f2;
+  --vac-on-bg:#d4f1de; --vac-on-bar:#1a9d52; --vac-on-ink:#0f6b36;
+  --vac-due-bg:#ffe5c7; --vac-due-bar:#f08a1c; --vac-due-ink:#a55200;
 }
 @media (prefers-color-scheme: dark){
   :root{--bg:#10151c;--card:#171e28;--ink:#e6ebf2;--muted:#93a0b2;--line:#273142;--brand:#7db2ff;--brand-2:#4f8fff;
-    --okbg:#12301f;--ok:#58d68d;--warnbg:#3a2f0b;--warn:#f0c14b;--badbg:#3b1613;--bad:#ff8a80;--side:#0a1018;--sideink:#b9c6d8}
+    --okbg:#12301f;--ok:#58d68d;--warnbg:#3a2f0b;--warn:#f0c14b;--badbg:#3b1613;--bad:#ff8a80;--side:#0a1018;--sideink:#b9c6d8;
+    --vac-on-bg:#14392a;--vac-on-bar:#3fcf80;--vac-on-ink:#7be3a8;--vac-due-bg:#43290f;--vac-due-bar:#ff9f3a;--vac-due-ink:#ffbe73}
 }
 *{box-sizing:border-box}
 html{font-size:15px}
@@ -75,3 +78,11 @@ body.print{background:#fff;color:#000;padding:20px;max-width:900px;margin:auto} 
 .grid tfoot th{border-top:2px solid var(--line);border-bottom:0;position:static}
 input.js-pattern.saved{outline:2px solid var(--ok)} input.js-pattern.failed{outline:2px solid var(--bad)} details.card summary{cursor:pointer} .nav-h{font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;opacity:.55;padding:12px 10px 3px}
 .no-print{margin-bottom:10px}
+
+/* Destaque de férias na lista de funcionários: verde = em férias; laranja = vencendo/vencidas (a etiqueta no nome repete a informação sem depender só da cor) */
+.grid tbody tr.vac-on td{background:var(--vac-on-bg)} .grid tbody tr.vac-due td{background:var(--vac-due-bg)}
+.grid tbody tr.vac-on td:first-child{box-shadow:inset 4px 0 0 var(--vac-on-bar)} .grid tbody tr.vac-due td:first-child{box-shadow:inset 4px 0 0 var(--vac-due-bar)}
+.vac-tag{font-size:.78rem;font-weight:600;margin-top:2px} .vac-on .vac-tag{color:var(--vac-on-ink)} .vac-due .vac-tag{color:var(--vac-due-ink)}
+.vac-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin:0 2px 8px} .vac-legend span{display:inline-flex;align-items:center;gap:6px}
+.vac-legend .dot{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+.vac-legend .dot.vac-on{background:var(--vac-on-bar)} .vac-legend .dot.vac-due{background:var(--vac-due-bar)}
