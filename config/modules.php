@@ -300,4 +300,16 @@ return [
         ],
         'unique' => ['scale_id', 'work_shift_id', 'team'],
     ],
+
+    'rotation-anchors' => [
+        'title' => 'Reinício do rodízio 12x36', 'icon' => '🔁', 'model' => \App\Models\RotationAnchor::class,
+        'search' => ['employee_name', 'note'], 'order' => ['work_date', 'desc'],
+        'columns' => [['employee_name', 'Colaborador'], ['work_date', 'Dia trabalhado (âncora)', 'date'], ['note', 'Observação']],
+        'fields' => [
+            ['employee_name', 'Colaborador', 'employee', 'required' => true],
+            ['work_date', 'Dia em que o colaborador trabalha (dali em diante: dia sim, dia não)', 'date', 'required' => true],
+            ['note', 'Observação (ex.: reinício a partir de 02/08)', 'text'],
+        ],
+        'unique' => ['employee_name', 'work_date'],
+    ],
 ];

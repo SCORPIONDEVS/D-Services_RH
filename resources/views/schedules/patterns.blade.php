@@ -4,6 +4,10 @@
 @section('actions')
     <a class="btn" href="{{ route('m.index', 'shift-patterns') }}">Gerenciar registros</a>
     <a class="btn" href="{{ route('m.index', 'pattern-assignments') }}">Postos ímpar/par</a>
+    <a class="btn" href="{{ route('m.index', 'rotation-anchors') }}">Reinício do rodízio</a>
+    <form method="post" action="{{ route('schedules.rotation.import') }}" style="display:inline" onsubmit="return confirm('Importar o rodízio ímpar/par dos colaboradores ativos em 12x36 a partir dos padrões já cadastrados? Quem já tem rodízio configurado não é alterado.')">@csrf<button class="btn">📥 Importar rodízio do cadastro</button></form>
+    <form method="post" action="{{ route('schedules.rotation.generate') }}" style="display:inline" onsubmit="return confirm('Gerar o padrão do mês escolhido? Quem já tem padrão nesse mês não é alterado.')">@csrf
+        <input type="month" name="month" value="{{ $nextMonth ?? '' }}" required style="width:auto"><button class="btn primary">➕ Gerar mês</button></form>
     <form method="post" action="{{ route('schedules.patterns.postos') }}" style="display:inline" onsubmit="return confirm('Substituir a lista de postos pelos colaboradores ativos do padrão mensal?')">@csrf @if(isset($month))<input type="hidden" name="month" value="{{ $month }}">@endif<button class="btn">⚡ Preencher postos automaticamente</button></form>
 @endsection
 

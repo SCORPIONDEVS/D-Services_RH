@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
     Route::get('schedules/visao', [ScheduleController::class, 'overview'])->name('schedules.overview');
     Route::get('schedules/patterns', [ScheduleController::class, 'patterns'])->name('schedules.patterns');
     Route::post('schedules/patterns/postos', [ScheduleController::class, 'fillPostos'])->name('schedules.patterns.postos');
+    Route::post('schedules/patterns/rotacao/importar', [ScheduleController::class, 'importRotation'])->name('schedules.rotation.import');
+    Route::post('schedules/patterns/rotacao/gerar', [ScheduleController::class, 'generateRotation'])->name('schedules.rotation.generate');
     Route::patch('schedules/patterns/{pattern}', [ScheduleController::class, 'updatePattern'])->name('schedules.patterns.update');
     Route::patch('schedules/{entry}', [ScheduleController::class, 'update'])->name('schedules.update');
 

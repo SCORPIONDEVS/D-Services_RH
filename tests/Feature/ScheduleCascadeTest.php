@@ -233,4 +233,15 @@ class ScheduleCascadeTest extends TestCase
         $this->post(route('m.store', 'team-scales'), ['team' => 'LIMPEZA', 'scale_id' => $scaleId])->assertSessionHasNoErrors();
         $this->assertContains('4x2', ScheduleLinks::scalesFor('LIMPEZA')); // passou a valer sem mexer em código
     }
+
+    public function test_editar_o_rotulo_da_escala_reflete_no_horario_sem_reiniciar(): void
+    {
+        $e = Employee::create(['name' => 'FULANO', 'team' => 'LIMPEZA', 'scale' => '12X36', 'work_shift_id' => $this->shift('LIMPEZA FOOD')]);
+        $this->assertSame('10:00 às 22:00 - Jornada 12 x 36', $e->fresh()->schedule_label);
+
+        $scale = \App\Models\Scale::where('name', '12X36')->first();
+        $this->put(route('m.update', ['scales', $scale->id]), ['name' => '12X36', 'label' => 'Jornada 12x36'])->assertSessionHasNoErrors();
+
+        $this->assertSame('10:00 às 22:00 - Jornada 12x36', $e->fresh()->schedule_label);
+    }
 }
