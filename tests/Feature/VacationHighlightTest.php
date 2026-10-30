@@ -121,7 +121,7 @@ class VacationHighlightTest extends TestCase
             ->assertSee('class="vac-legend"', false)
             ->getContent();
 
-        $row = fn (string $name) => preg_match('/<tr class="([^"]*)">\s*<td><a [^>]*><b>' . $name . '<\/b>/u', $html, $m) ? $m[1] : null;
+        $row = fn (string $name) => preg_match('/<tr class="([^"]*)">\s*<td class="id">\d+<\/td>\s*<td><a [^>]*><b>' . $name . '<\/b>/u', $html, $m) ? $m[1] : null;
         $this->assertSame('vac-on', $row('EM FERIAS'));
         $this->assertSame('vac-due', $row('VENCENDO'));
         $this->assertSame('vac-due', $row('VENCIDA'));
@@ -139,5 +139,29 @@ class VacationHighlightTest extends TestCase
 
         Setting::put('vacation_alert_days', 60);
         $this->get(route('employees.index'))->assertSee('Férias vencem em 45 dias');
+    }
+
+    /* ---------- selo de status e coluna ID ---------- */
+
+    public function test_selo_de_status_inativo_e_vermelho_e_ativo_e_verde(): void
+    {
+        foreach (['INATIVO' => 'bad', 'inativo' => 'bad', 'ATIVO' => 'ok', 'NÃO LANÇADO' => 'bad', 'LANÇADO' => 'ok',
+                  'PENDENTE' => 'bad', 'PAGO' => 'ok', 'ENTREVISTA' => 'warn', 'QUALQUER COISA' => 'muted'] as $texto => $classe) {
+            $this->assertSame($classe, \App\Support\Fmt::badgeClass($texto), $texto);
+        }
+    }
+
+    public function test_lista_mostra_coluna_id_e_selo_vermelho_para_inativo(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $ativo = $this->emp(['name' => 'ATIVO UM']);
+        $inativo = $this->emp(['name' => 'INATIVO UM', 'termination_date' => '2026-05-01']);
+
+        $html = $this->get(route('employees.index', ['status' => 'todos']))->assertOk()->assertSee('<th class="id">ID</th>', false)->getContent();
+
+        $this->assertMatchesRegularExpression('/<td class="id">' . $ativo->id . '<\/td>\s*<td><a [^>]*><b>ATIVO UM<\/b>/u', $html);
+        $this->assertMatchesRegularExpression('/<td class="id">' . $inativo->id . '<\/td>\s*<td><a [^>]*><b>INATIVO UM<\/b>/u', $html);
+        $this->assertStringContainsString('<span class="badge bad">INATIVO</span>', $html);
+        $this->assertStringContainsString('<span class="badge ok">ATIVO</span>', $html);
     }
 }

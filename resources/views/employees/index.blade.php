@@ -30,7 +30,7 @@
 
 <div class="card table-wrap">
     <table class="grid">
-        <thead><tr><th>Nome</th><th>Equipe</th><th>Cargo</th><th>Admissão</th><th>Fim 45d</th><th>Fim 90d</th><th>Venc. ASO</th><th>Status</th><th class="r"></th></tr></thead>
+        <thead><tr><th class="id">ID</th><th>Nome</th><th>Equipe</th><th>Cargo</th><th>Admissão</th><th>Fim 45d</th><th>Fim 90d</th><th>Venc. ASO</th><th>Status</th><th class="r"></th></tr></thead>
         <tbody>
         @forelse ($employees as $e)
             @php
@@ -39,6 +39,7 @@
                 $vacClass = match ($vac['status'] ?? null) { 'em_ferias' => 'vac-on', 'vencendo', 'vencida' => 'vac-due', default => '' };
             @endphp
             <tr class="{{ $vacClass }}">
+                <td class="id">{{ $e->id }}</td>
                 <td><a href="{{ route('employees.show', $e) }}"><b>{{ $e->name }}</b></a><div class="sub">{{ $e->company }}</div>
                     @if ($vac)
                         <div class="vac-tag">
@@ -61,7 +62,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="9" class="empty">Nenhum funcionário encontrado.</td></tr>
+            <tr><td colspan="10" class="empty">Nenhum funcionário encontrado.</td></tr>
         @endforelse
         </tbody>
     </table>

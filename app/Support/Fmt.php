@@ -35,9 +35,10 @@ class Fmt
     public static function badgeClass(string $v): string
     {
         $v = mb_strtoupper($v);
+        // Negativos primeiro: "INATIVO" contém "ATIV" e "NÃO LANÇADO" contém "LANÇADO"; se os positivos fossem checados antes, ficariam verdes.
         foreach ([
+            'bad' => ['INATIV', 'REPROVADO', 'DESISTENTE', 'NÃO LANÇADO', 'NAO LANÇADO', 'NAO LANCADO', 'PENDENTE'],
             'ok' => ['ATIV', 'ABERTA', 'PAGO', 'LANÇADO', 'OK', 'CONTRATADO', 'ENVIADO', 'DISPONÍVEL', 'DISPONIVEL'],
-            'bad' => ['INATIV', 'REPROVADO', 'DESISTENTE', 'NÃO LANÇADO', 'PENDENTE'],
             'warn' => ['PAUSADA', 'ENTREVISTA', 'PRÉ-APROVADO', 'CONTRATAÇÃO', 'OCUPADO', 'VERIFICAR'],
         ] as $cls => $words) {
             foreach ($words as $w) {

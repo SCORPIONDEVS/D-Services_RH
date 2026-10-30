@@ -86,3 +86,4 @@ input.js-pattern.saved{outline:2px solid var(--ok)} input.js-pattern.failed{outl
 .vac-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin:0 2px 8px} .vac-legend span{display:inline-flex;align-items:center;gap:6px}
 .vac-legend .dot{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
 .vac-legend .dot.vac-on{background:var(--vac-on-bar)} .vac-legend .dot.vac-due{background:var(--vac-due-bar)}
+.grid th.id,.grid td.id{width:1%;white-space:nowrap;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
