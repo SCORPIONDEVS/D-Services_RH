@@ -31,10 +31,18 @@ class ScheduleLinksSeeder extends Seeder
             foreach ($names as $n) TeamScale::firstOrCreate(['team' => $team, 'scale_id' => Scale::where('name', $n)->value('id')]);
         }
 
+        // Jornada usada na planilha (Bombeiro Civil 09:00-21:00) que não consta em "Jornadas por cargo".
+        // Mesmo padrão das demais 12x36: expediente 12:00, 11:00 efetivas (supõe 1h de intervalo; ajuste se for outro).
+        WorkShift::firstOrCreate(['name' => 'FISCAL DIURNO 09-21'], [
+            'entry_time' => '09:00', 'exit_time' => '21:00', 'hours_total' => '12:00', 'hours_worked' => '11:00',
+        ]);
+
         // [escala, equipe, jornada (nome em "Jornadas por cargo")]
         $links = [];
         foreach (['LIMPEZA PISO/BANHEIRO DIURNO', 'LIMPEZA PRAÇA/BOULEVARD', 'LIMPEZA NOTURNO', 'LIMPEZA FOOD'] as $j) $links[] = ['12X36', 'LIMPEZA', $j];
-        foreach (['FISCAL DIURNO', 'FISCAL NOTURNO'] as $j) $links[] = ['12X36', 'SEGURANÇA', $j];
+        foreach (['FISCAL DIURNO', 'FISCAL DIURNO 09-21', 'FISCAL NOTURNO'] as $j) $links[] = ['12X36', 'SEGURANÇA', $j];
+        // 6X1: a jornada RH cobre seg-sex 08:00-17:00; o sábado (08:00-12:00) não cabe no cadastro, que só tem entrada/saída.
+        $links[] = ['6X1 2ª-Sáb', 'SEGURANÇA', 'RH'];
         foreach (['5x2 seg-sex', '5X2 2ª-6ª'] as $s) $links[] = [$s, 'SEGURANÇA', 'ZELADOR'];
         foreach (['4x2', '5x2 seg-sex'] as $s) {
             foreach (['ORIENTADOR MANHÃ', 'ORIENTADOR TARDE'] as $j) $links[] = [$s, 'TERMINAL', $j];

@@ -18,5 +18,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(SpreadsheetSeeder::class);
         $this->call(ExtraSheetsSeeder::class);
+        $this->call(ScheduleLinksSeeder::class); // depende de work_shifts (ExtraSheetsSeeder)
     }
 }

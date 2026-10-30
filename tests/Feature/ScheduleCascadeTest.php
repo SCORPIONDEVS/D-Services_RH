@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Employee;
+use App\Models\Scale;
+use App\Models\ScaleWorkShift;
 use App\Models\ShiftPattern;
+use App\Models\TeamScale;
 use App\Models\User;
 use App\Models\WorkShift;
 use App\Support\ScheduleLinks;
@@ -26,7 +29,7 @@ class ScheduleCascadeTest extends TestCase
             ['FISCAL DIURNO', '07:00', '19:00'], ['FISCAL NOTURNO', '19:00', '07:00'],
             ['LIMPEZA PISO/BANHEIRO DIURNO', '06:00', '18:00'], ['LIMPEZA PRAÇA/BOULEVARD', '08:00', '20:00'],
             ['LIMPEZA NOTURNO', '18:00', '06:00'], ['LIMPEZA FOOD', '10:00', '22:00'], ['ZELADOR', '07:00', '17:00'],
-            ['ORIENTADOR MANHÃ', '05:00', '13:30'], ['ORIENTADOR TARDE', '13:30', '22:00'],
+            ['ORIENTADOR MANHÃ', '05:00', '13:30'], ['ORIENTADOR TARDE', '13:30', '22:00'], ['RH', '08:00', '17:00'],
         ] as [$n, $in, $out]) WorkShift::create(['name' => $n, 'entry_time' => $in, 'exit_time' => $out]);
 
         $this->seed(ScheduleLinksSeeder::class);
@@ -56,8 +59,24 @@ class ScheduleCascadeTest extends TestCase
         $seguranca = collect($map['shifts']['12X36'])->where('team', 'SEGURANÇA')->pluck('name')->all();
         $this->assertContains('LIMPEZA FOOD', $limpeza);
         $this->assertNotContains('FISCAL DIURNO', $limpeza);
-        $this->assertSame(['FISCAL DIURNO', 'FISCAL NOTURNO'], $seguranca);
+        $this->assertEqualsCanonicalizing(['FISCAL DIURNO', 'FISCAL DIURNO 09-21', 'FISCAL NOTURNO'], $seguranca);
         $this->assertSame('06:00 às 18:00 - Jornada 12 x 36', collect($map['shifts']['12X36'])->firstWhere('name', 'LIMPEZA PISO/BANHEIRO DIURNO')['label']);
+    }
+
+    public function test_seeder_cobre_bombeiro_09_21_e_a_escala_6x1_e_e_idempotente(): void
+    {
+        $map = ScheduleLinks::cascadeMap();
+
+        $f = collect($map['shifts']['12X36'])->firstWhere('name', 'FISCAL DIURNO 09-21');
+        $this->assertSame('SEGURANÇA', $f['team']);
+        $this->assertSame('09:00 às 21:00 - Jornada 12 x 36', $f['label']);
+
+        $this->assertSame(['RH'], collect($map['shifts']['6X1 2ª-Sáb'])->pluck('name')->all());
+        $this->assertSame([], ScheduleLinks::errors('SEGURANÇA', '6X1 2ª-Sáb', $this->shift('RH')));
+
+        $antes = [Scale::count(), TeamScale::count(), ScaleWorkShift::count(), WorkShift::count()];
+        $this->seed(ScheduleLinksSeeder::class);
+        $this->assertSame($antes, [Scale::count(), TeamScale::count(), ScaleWorkShift::count(), WorkShift::count()]);
     }
 
     public function test_formulario_embute_o_mapa_e_o_script_que_limpa_os_campos_filhos(): void
@@ -133,7 +152,7 @@ class ScheduleCascadeTest extends TestCase
         foreach ([
             ['ALAIDE MARIA DO NASCIMENTO', 'LIMPEZA', '12X36', '06:00 às 18:00 - Jornada 12 x 36'],
             ['ORIENTADOR UM', 'TERMINAL', '4x2', '05:00 às 13:30 - Jornada 4 x 2'],
-            ['SEGURANCA SEM JORNADA', 'SEGURANÇA', '12X36', '09:00 às 21:00 - Jornada 12 x 36'],   // horário não cadastrado
+            ['SEGURANCA SEM JORNADA', 'SEGURANÇA', '12X36', '11:00 às 23:00 - Jornada 12 x 36'],   // horário não cadastrado
             ['SEIS POR UM', 'SEGURANÇA', '6X1 2ª-Sáb', '08:00 às 17:00 (Seg a Sex)/ 08:00 às 12:00 (Sab)'],
             ['COMBINACAO INVALIDA', 'TERMINAL', '12X36', '06:00 às 18:00 - Jornada 12 x 36'],
             ['TIPO DIVERGENTE', 'TERMINAL', '4x2', '05:00 às 13:30 - Jornada 5 x 2'],
